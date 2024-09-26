@@ -1,27 +1,39 @@
 import socket
 import threading
+from time import sleep
+import sys
+
+stop_thread = False
 
 nickname = input("Choose a nickname: ").replace(' ', "_")
 
 if nickname == "Eve":
     print("Activated evesdropper mode!")
 
-HOST = '10.38.199.48'
+HOST = 'localhost'
 PORT = 55555
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((HOST, PORT))
 
 def receive():
-    while True:
+    global stop_thread
+    while not stop_thread:
         try:
             message = client.recv(1024).decode()
             if message == 'NICK':
-                client.send(nickname.encode())     
+                client.send(nickname.encode())
+
+            elif message.startswith('LEAVE_CHAT:'):
+                reason = message.removeprefix('LEAVE_CHAT:')
+                client.close()
+                quit(f'Oh no! {reason} Disconnecting!')
+
             else:
                 print(message)
 
-        #This exception was my addition!
+            
+
         except ConnectionResetError:
             quit("Server Closed!")
         
@@ -31,7 +43,8 @@ def receive():
 
 
 def write():
-    while True:
+    global stop_thread
+    while not stop_thread:
         message = input("")
         if not message.startswith('/'):
             message = f'{nickname}: {message}'
@@ -44,8 +57,16 @@ receive_thread.start()
 write_thread = threading.Thread(target=write)
 write_thread.start()
 
-# This helper function was my addition (I decided to put that in a func)!
 def quit(cause):
+    global stop_thread
     print(cause)
     client.close()
-    exit()
+    stop_thread = True
+    
+    if threading.current_thread() is not receive_thread:
+        receive_thread.join()
+
+    if threading.current_thread() is not write_thread:
+        write_thread.join()
+
+    sys.exit()
