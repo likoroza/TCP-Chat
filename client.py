@@ -6,7 +6,7 @@ nickname = input("Choose a nickname: ").replace(' ', "_")
 if nickname == "Eve":
     print("Activated evesdropper mode!")
 
-HOST = 'localhost'
+HOST = '10.38.199.48'
 PORT = 55555
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
