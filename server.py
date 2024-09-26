@@ -69,6 +69,12 @@ def handle(client: Client):
                 if not targetExists:
                     client.clientSocket.send("Target doesn't exist!".encode())
                     continue
+            
+            elif opcode.lower() == '/kickme':
+                ask_to_leave(client, "You got kicked!")
+
+            else:
+                client.clientSocket.send('Invalid command!'.encode())
 
         except Exception as e:
             if client in clients:
