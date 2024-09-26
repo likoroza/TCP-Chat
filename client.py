@@ -18,6 +18,8 @@ client.connect((HOST, PORT))
 
 def receive():
     global stop_thread
+    global nickname
+
     while not stop_thread:
         try:
             message = client.recv(1024).decode()
@@ -28,6 +30,9 @@ def receive():
                 reason = message.removeprefix('LEAVE_CHAT:')
                 client.close()
                 quit(f'Oh no! {reason} Disconnecting!')
+
+            elif message.startswith('NICK_UPDATE:'):
+                nickname = message.removeprefix('NICK_UPDATE:')
 
             else:
                 print(message)

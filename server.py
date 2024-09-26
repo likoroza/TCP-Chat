@@ -2,8 +2,9 @@ import threading
 import socket
 
 HOST = 'localhost'
-HOST = 'localhost'
 PORT = 55555
+
+ADMIN_PREFIX = '[ADMIN] '
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
@@ -11,13 +12,15 @@ server.listen()
 
 #The following class was not on original code
 class Client():
-    def __init__(self, clientSocket, name=None):
+    def __init__(self, clientSocket, name=None, isAdmin=False):
         self.clientSocket = clientSocket
         self.nickname = name
+        self.isAdmin = isAdmin
+        
 
 clients = []
 
-def remove_disconnected(client: Client, msg=''):
+def remove_disconnected(client: Client):
     clients.remove(client)
     client.clientSocket.close()
     broadcast(f'{client.nickname} has left!'.encode())
@@ -42,42 +45,34 @@ def handle(client: Client):
             opcode = command[0]
             args = command[1:]
 
-            
-            message_to_target = ' '.join(args[1:])
-            if message_to_target.isspace() or message_to_target == '':
-                    client.clientSocket.send("You can't send an empty message!".encode())
-                    continue
-
             if opcode.lower() == '/whisper':
+                message_to_target = ' '.join(args[1:])
+                if message_to_target.isspace() or message_to_target == '':
+                        client.clientSocket.send("You can't send an empty message!".encode())
+                        continue
+
                 targetExists = False
-                for possibleTarget in clients:
-                    if possibleTarget.nickname == args[0]:
-                        if possibleTarget == client:
+                for possibleWhisperTarget in clients:
+                    if possibleWhisperTarget.nickname == args[0]:
+                        if possibleWhisperTarget == client:
                             client.clientSocket.send("You can't whisper to yourself!".encode())
                             continue
 
-                        possibleTarget.clientSocket.send(f'{client.nickname} whispered you: {message_to_target}'.encode())
-                        client.clientSocket.send(f'You sent "{message_to_target}" to {possibleTarget.nickname}'.encode())
+                        possibleWhisperTarget.clientSocket.send(f'{client.nickname} whispered you: {message_to_target}'.encode())
+                        client.clientSocket.send(f'You sent "{message_to_target}" to {possibleWhisperTarget.nickname}'.encode())
                         targetExists = True
 
                         for maybeEve in clients:
                             if maybeEve.nickname == "Eve":
-                                maybeEve.clientSocket.send(f'{client.nickname} whispered "{message_to_target}" to {possibleTarget.nickname}'.encode())
+                                maybeEve.clientSocket.send(f'{client.nickname} whispered "{message_to_target}" to {possibleWhisperTarget.nickname}'.encode())
 
                 if not targetExists:
                     client.clientSocket.send("Target doesn't exist!".encode())
                     continue
-                        
-            else:
-                client.clientSocket.send('Invalid command!'.encode())
-
 
         except Exception as e:
             if client in clients:
-                clients.remove(client)
-                client.clientSocket.close()
-                broadcast(f'{client.nickname} has left!'.encode())
-                print(client)
+                remove_disconnected(client)
     
 
 def receive():
@@ -85,13 +80,21 @@ def receive():
 
     while True:
         clientSocket, address = server.accept()
+        client = Client(clientSocket=clientSocket)
         print(f'Connected with {str(address)}')
 
-        #clients.append(client)
-        client = Client(clientSocket=clientSocket)
+        
         client.clientSocket.send("NICK".encode())
         nickname = client.clientSocket.recv(1024).decode()
-        #nicknames.append(nickname)
+
+        if clients == []:
+            client.isAdmin = True
+            client.clientSocket.send("You are now Admin!".encode())
+            #I'm not executing the following line so other people can refrence the client without adding the prefix.
+            #nickname = ADMIN_PREFIX + nickname
+            client.clientSocket.send(f'NICK_UPDATE:{ADMIN_PREFIX + nickname}'.encode())
+
+
         client.nickname = nickname
 
         clients.append(client)
