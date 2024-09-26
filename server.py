@@ -26,7 +26,7 @@ clients = []
     # broadcast(f'{client.nickname} has left!'.encode())
 
 def remove(client: Client):
-    client.clientRef.close()
+    client.clientSocket.close()
     clients.remove(client)
     broadcast(f'{client.nickname} has left!'.encode())
     
@@ -39,11 +39,36 @@ def handle(client: Client):
     while True:
         try:
             message = client.clientSocket.recv(1024)
-            broadcast(message)
+            decoded_message = message.decode()
+            if not decoded_message.startswith('/'):
+                broadcast(message)
+                continue
 
-        except:
+            command = decoded_message.split(' ')
+            opcode = command[0]
+            args = command.pop(0)
+
+            if command.lower() == '/whisper':
+                for possibleTarget in clients:
+                    if possibleTarget == client:
+                        client.clientSocket.send("You can't whisper to yourself!".encode())
+                        continue
+                    
+                    if possibleTarget.nickname == args[0]:
+                        message_to_target = ' '.join(args.pop(0))
+                        if message_to_target.isspace() or message_to_target == '':
+                            client.clientSocket.send("You can't send an empty message!".encode())
+                            continue
+
+                        possibleTarget.send(f'{client.nickname} whispered to you: {message_to_target}'.encode())
+
+            else:
+                client.clientSocket.send('Invalid command!'.encode())
+
+
+        except Exception as e:
             remove(client)
-            break
+
 
 def receive():
     print('listening...')
@@ -54,6 +79,7 @@ def receive():
 
         #clients.append(client)
         clients.append(client := Client(clientSocket=clientSocket))
+        print('added')
 
         client.clientSocket.send("NICK".encode())
         nickname = client.clientSocket.recv(1024).decode()

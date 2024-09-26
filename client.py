@@ -29,7 +29,10 @@ def receive():
 
 def write():
     while True:
-        message = f'{nickname}: {input("")}'
+        message = input("")
+        if not message.startswith('/'):
+            message = f'{nickname}: {message}'
+
         client.send(message.encode())
 
 receive_thread = threading.Thread(target=receive)
