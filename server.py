@@ -43,12 +43,14 @@ def handle(client: Client):
             args = command[1:]
 
             
-            message_to_target = ' '.join(args[1:])
-            if message_to_target.isspace() or message_to_target == '':
-                    client.clientSocket.send("You can't send an empty message!".encode())
-                    continue
+            
 
             if opcode.lower() == '/whisper':
+                message_to_target = ' '.join(args[1:])
+                if message_to_target.isspace() or message_to_target == '':
+                        client.clientSocket.send("You can't send an empty message!".encode())
+                        continue
+
                 targetExists = False
                 for possibleTarget in clients:
                     if possibleTarget.nickname == args[0]:
@@ -67,7 +69,10 @@ def handle(client: Client):
                 if not targetExists:
                     client.clientSocket.send("Target doesn't exist!".encode())
                     continue
-                        
+            
+            elif opcode.lower() == '/kickme':
+                ask_to_leave(client, "You got kicked!")
+
             else:
                 client.clientSocket.send('Invalid command!'.encode())
 
