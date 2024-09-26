@@ -1,7 +1,10 @@
 import socket
 import threading
 
-nickname = input("Choose a nickname: ")
+nickname = input("Choose a nickname: ").replace(' ', "_")
+
+if nickname == "Eve":
+    print("Activated evesdropper mode!")
 
 HOST = 'localhost'
 PORT = 55555
@@ -14,7 +17,7 @@ def receive():
         try:
             message = client.recv(1024).decode()
             if message == 'NICK':
-                client.send(nickname.encode())              
+                client.send(nickname.encode())     
             else:
                 print(message)
 

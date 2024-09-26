@@ -48,21 +48,32 @@ def handle(client: Client):
             opcode = command[0]
             args = command[1:]
 
+            
+            message_to_target = ' '.join(args[1:])
+            if message_to_target.isspace() or message_to_target == '':
+                    client.clientSocket.send("You can't send an empty message!".encode())
+                    continue
+
             if opcode.lower() == '/whisper':
+                targetExists = False
                 for possibleTarget in clients:
                     if possibleTarget.nickname == args[0]:
-                        print('Exists!')
                         if possibleTarget == client:
                             client.clientSocket.send("You can't whisper to yourself!".encode())
                             continue
 
-                        message_to_target = ' '.join(args[1:])
-                        if message_to_target.isspace() or message_to_target == '':
-                            client.clientSocket.send("You can't send an empty message!".encode())
-                            continue
+                        possibleTarget.clientSocket.send(f'{client.nickname} whispered you: {message_to_target}'.encode())
+                        client.clientSocket.send(f'You sent "{message_to_target}" to {possibleTarget.nickname}'.encode())
+                        targetExists = True
 
-                        possibleTarget.clientSocket.send(f'{client.nickname} whispered to you: {message_to_target}'.encode())
+                        for maybeEve in clients:
+                            if maybeEve.nickname == "Eve":
+                                maybeEve.clientSocket.send(f'{client.nickname} whispered "{message_to_target}" to {possibleTarget.nickname}'.encode())
 
+                if not targetExists:
+                    client.clientSocket.send("Target doesn't exist!".encode())
+                    continue
+                        
             else:
                 client.clientSocket.send('Invalid command!'.encode())
 
@@ -80,8 +91,6 @@ def receive():
 
         #clients.append(client)
         clients.append(client := Client(clientSocket=clientSocket))
-        print('added')
-
         client.clientSocket.send("NICK".encode())
         nickname = client.clientSocket.recv(1024).decode()
         #nicknames.append(nickname)
