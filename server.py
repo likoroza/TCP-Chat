@@ -1,7 +1,7 @@
 import threading
 import socket
 
-HOST = '10.38.199.48'
+HOST = 'localhost'
 PORT = 55555
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -24,11 +24,6 @@ clients = []
     # nickname = nicknames[index]
     # nicknames.remove(nickname)
     # broadcast(f'{client.nickname} has left!'.encode())
-
-def remove(client: Client):
-    client.clientSocket.close()
-    clients.remove(client)
-    broadcast(f'{client.nickname} has left!'.encode())
     
 
 def broadcast(message):
@@ -79,8 +74,12 @@ def handle(client: Client):
 
 
         except Exception as e:
-            remove(client)
-
+            if client in clients:
+                clients.remove(client)
+                client.clientSocket.close()
+                broadcast(f'{client.nickname} has left!'.encode())
+                print(client)
+    
 
 def receive():
     print('listening...')
@@ -90,12 +89,15 @@ def receive():
         print(f'Connected with {str(address)}')
 
         #clients.append(client)
-        clients.append(client := Client(clientSocket=clientSocket))
+        client = Client(clientSocket=clientSocket)
         client.clientSocket.send("NICK".encode())
         nickname = client.clientSocket.recv(1024).decode()
         #nicknames.append(nickname)
         client.nickname = nickname
+
+        clients.append(client)
         
+        print(clients)
 
         print(f'Nickname of the client is {nickname}!')
         broadcast(f'{nickname} joined the chat!'.encode())
