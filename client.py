@@ -3,7 +3,7 @@ import threading
 
 nickname = input("Choose a nickname: ")
 
-HOST = '10.38.199.48'
+HOST = 'localhost'
 PORT = 55555
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

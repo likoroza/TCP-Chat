@@ -1,7 +1,7 @@
 import threading
 import socket
 
-HOST = '10.38.199.48'
+HOST = 'localhost'
 PORT = 55555
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -46,21 +46,22 @@ def handle(client: Client):
 
             command = decoded_message.split(' ')
             opcode = command[0]
-            args = command.pop(0)
+            args = command[1:]
 
-            if command.lower() == '/whisper':
+            if opcode.lower() == '/whisper':
                 for possibleTarget in clients:
-                    if possibleTarget == client:
-                        client.clientSocket.send("You can't whisper to yourself!".encode())
-                        continue
-                    
                     if possibleTarget.nickname == args[0]:
-                        message_to_target = ' '.join(args.pop(0))
+                        print('Exists!')
+                        if possibleTarget == client:
+                            client.clientSocket.send("You can't whisper to yourself!".encode())
+                            continue
+
+                        message_to_target = ' '.join(args[1:])
                         if message_to_target.isspace() or message_to_target == '':
                             client.clientSocket.send("You can't send an empty message!".encode())
                             continue
 
-                        possibleTarget.send(f'{client.nickname} whispered to you: {message_to_target}'.encode())
+                        possibleTarget.clientSocket.send(f'{client.nickname} whispered to you: {message_to_target}'.encode())
 
             else:
                 client.clientSocket.send('Invalid command!'.encode())
