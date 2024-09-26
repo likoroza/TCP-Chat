@@ -2,12 +2,14 @@ import threading
 import socket
 
 HOST = 'localhost'
+HOST = 'localhost'
 PORT = 55555
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((HOST, PORT))
 server.listen()
 
+#The following class was not on original code
 class Client():
     def __init__(self, clientSocket, name=None):
         self.clientSocket = clientSocket
@@ -41,15 +43,12 @@ def handle(client: Client):
             args = command[1:]
 
             
-            
+            message_to_target = ' '.join(args[1:])
+            if message_to_target.isspace() or message_to_target == '':
+                    client.clientSocket.send("You can't send an empty message!".encode())
+                    continue
 
             if opcode.lower() == '/whisper':
-
-                message_to_target = ' '.join(args[1:])
-                if message_to_target.isspace() or message_to_target == '':
-                        client.clientSocket.send("You can't whisper an empty message!".encode())
-                        continue
-
                 targetExists = False
                 for possibleTarget in clients:
                     if possibleTarget.nickname == args[0]:
@@ -68,16 +67,17 @@ def handle(client: Client):
                 if not targetExists:
                     client.clientSocket.send("Target doesn't exist!".encode())
                     continue
-            
-            elif opcode.lower() == '/kickme':
-                ask_to_leave(client, 'You Got Kicked!')
+                        
             else:
                 client.clientSocket.send('Invalid command!'.encode())
 
 
         except Exception as e:
             if client in clients:
-                remove_disconnected(client)
+                clients.remove(client)
+                client.clientSocket.close()
+                broadcast(f'{client.nickname} has left!'.encode())
+                print(client)
     
 
 def receive():
@@ -87,10 +87,11 @@ def receive():
         clientSocket, address = server.accept()
         print(f'Connected with {str(address)}')
 
+        #clients.append(client)
         client = Client(clientSocket=clientSocket)
         client.clientSocket.send("NICK".encode())
         nickname = client.clientSocket.recv(1024).decode()
-
+        #nicknames.append(nickname)
         client.nickname = nickname
 
         clients.append(client)
@@ -104,4 +105,3 @@ def receive():
 
 if __name__ == '__main__':
     receive()
-    
