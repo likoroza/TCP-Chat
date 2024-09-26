@@ -1,5 +1,6 @@
 import threading
 import socket
+import time
 
 HOST = 'localhost'
 PORT = 55555
@@ -51,7 +52,7 @@ def handle(client: Client):
                         client.clientSocket.send("You can't send an empty message!".encode())
                         continue
 
-                targetExists = False
+                whisperingTargetExists = False
                 for possibleWhisperTarget in clients:
                     if possibleWhisperTarget.nickname == args[0]:
                         if possibleWhisperTarget == client:
@@ -60,19 +61,35 @@ def handle(client: Client):
 
                         possibleWhisperTarget.clientSocket.send(f'{client.nickname} whispered you: {message_to_target}'.encode())
                         client.clientSocket.send(f'You sent "{message_to_target}" to {possibleWhisperTarget.nickname}'.encode())
-                        targetExists = True
+                        whisperingTargetExists = True
 
                         for maybeEve in clients:
                             if maybeEve.nickname == "Eve":
                                 maybeEve.clientSocket.send(f'{client.nickname} whispered "{message_to_target}" to {possibleWhisperTarget.nickname}'.encode())
 
-                if not targetExists:
+                if not whisperingTargetExists:
                     client.clientSocket.send("Target doesn't exist!".encode())
                     continue
             
-            elif opcode.lower() == '/kickme':
-                ask_to_leave(client, "You got kicked!")
+            elif opcode.lower() == '/kick':
+                if not client.isAdmin:
+                    client.clientSocket.send("You don't have permissions to do that!".encode())
+                    continue
+                if args[0].isspace() or args[0] == '':
+                    client.clientSocket.send("You have to specify a target!".encode())
 
+                kickingTargetExists = False
+                for possibleKickingTarget in clients:
+                    if possibleKickingTarget.nickname == args[0]:
+                        ask_to_leave(possibleKickingTarget, "You got kicked!")
+                        client.clientSocket.send(f"You successfuly kicked {possibleKickingTarget.nickname}!".encode())
+                        kickingTargetExists = True
+
+                if not kickingTargetExists:
+                    client.clientSocket.send(f"Target doesn't exist".encode())
+
+
+                
             else:
                 client.clientSocket.send('Invalid command!'.encode())
 
@@ -98,6 +115,7 @@ def receive():
             client.clientSocket.send("You are now Admin!".encode())
             #I'm not executing the following line so other people can refrence the client without adding the prefix.
             #nickname = ADMIN_PREFIX + nickname
+            time.sleep(0.01)
             client.clientSocket.send(f'NICK_UPDATE:{ADMIN_PREFIX + nickname}'.encode())
 
 
