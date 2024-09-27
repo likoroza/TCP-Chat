@@ -1,5 +1,6 @@
 import threading
 import socket
+import time
 
 HOST = 'localhost'
 PORT = 55555
@@ -38,6 +39,7 @@ def handle(client: Client):
             message = client.clientSocket.recv(1024)
             decoded_message = message.decode()
             if not decoded_message.startswith('/'):
+                message = f"[ADMIN] {client.nickname}: {decoded_message}".encode() if client.isAdmin else f"{client.nickname}: {decoded_message}".encode()
                 broadcast(message)
                 continue
 
@@ -69,6 +71,12 @@ def handle(client: Client):
                 if not targetExists:
                     client.clientSocket.send("Target doesn't exist!".encode())
                     continue
+            
+            elif opcode.lower() == '/kickme':
+                ask_to_leave(client, "You got kicked!")
+
+            else:
+                client.clientSocket.send('Invalid command!'.encode())
 
         except Exception as e:
             if client in clients:
@@ -90,17 +98,14 @@ def receive():
         if clients == []:
             client.isAdmin = True
             client.clientSocket.send("You are now Admin!".encode())
-            #I'm not executing the following line so other people can refrence the client without adding the prefix.
-            #nickname = ADMIN_PREFIX + nickname
-            client.clientSocket.send(f'NICK_UPDATE:{ADMIN_PREFIX + nickname}'.encode())
-
 
         client.nickname = nickname
 
         clients.append(client)
 
         print(f'Nickname of the client is {nickname}!')
-        broadcast(f'{nickname} joined the chat!'.encode())
+        broadcast(f'[ADMIN] {nickname} joined the chat!'.encode() if client.isAdmin else f'{nickname} joined the chat!'.encode())
+        time.sleep(0.1)
         client.clientSocket.send('Connected to the server!'.encode())
 
         thread = threading.Thread(target=handle, args=(client,))

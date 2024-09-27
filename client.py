@@ -51,9 +51,6 @@ def write():
     global stop_thread
     while not stop_thread:
         message = input("")
-        if not message.startswith('/'):
-            message = f'{nickname}: {message}'
-
         client.send(message.encode())
 
 receive_thread = threading.Thread(target=receive)
