@@ -1,14 +1,26 @@
 import socket
 import threading
 from time import sleep
+import re
 import sys
 
 stop_thread = False
 
-nickname = input("Choose a nickname: ").replace(' ', "_")
+def get_valid_nickname():
+    while True:
+        nickname = input("Choose a nickname: ")
+        if re.match(r'^[a-zA-Z0-9_]+$', nickname):
+            return nickname.replace(" ", "_")
+        else:
+            print("Invalid nickname. Please use only letters, numbers, and underscores.")
 
+nickname = get_valid_nickname()
 if nickname == "Eve":
     print("Activated evesdropper mode!")
+
+def is_valid_nickname(nickname):
+    # Regex to allow only alphanumeric characters and underscores
+    return bool(re.match(r'^[\w]+$', nickname))
 
 HOST = 'localhost'
 PORT = 55555
